@@ -24,7 +24,7 @@ pipeline {
             }
        stage('Create Docker Image') {
            steps {
-               sh 'docker build -t prvndevops/banking-project-demo:3.0 .'
+               sh 'docker build -t prvndevops/banking-project-demo:1.0 .'
                     }
                 }
        stage('Docker-Login') {
