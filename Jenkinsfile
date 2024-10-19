@@ -1,60 +1,58 @@
 pipeline {
-  agent any
-     tools {
-       maven 'M2_HOME'
-           }
- 
-  stages {
-    stage('Git Checkout') {
-      steps {
-        echo 'This stage is to clone the repo from github'
-        git branch: 'main', url: 'https://github.com/challadevops1/Banking-Project.git'
-                        }
+    agent any
+
+    tools {
+        // Install the Maven version configured as "M3" and add it to the path.
+        maven "M2_HOME"
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                // Get some code from a GitHub repository
+                git 'https://github.com/rohinicbabu/star-agile-banking-finance.git'
+
+                // Run Maven on a Unix agent.
+                sh "mvn -Dmaven.test.failure.ignore=true clean package"
+
+            }        
+        }
+       stage('Generate Test Reports') {
+           steps {
+               publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '/var/lib/jenkins/workspace/BankingProject/target/surefire-reports', reportFiles: 'index.html', reportName: 'HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+                    }
             }
-    stage('Create Package') {
-      steps {
-        echo 'This stage will compile, test, package my application'
-        sh 'mvn package'
-                          }
-            }
-    stage('Generate Test Report') {
-      steps {
-        echo 'This stage generate Test report using TestNG'
-        publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '/var/lib/jenkins/workspace/CICD_JOB/target/surefire-reports', reportFiles: 'index.html', reportName: 'HTML Report', reportTitles: '', useWrapperFileDirectly: true])
-                          }
-            }
-    stage('Create-Image') {
-      steps {
-        echo 'This stage will create a image of my application'
-        sh 'docker build -t cbabu85/banking-apps:1.0 .'
-                          }
-            }
-    stage('Docker-Login') {
-      steps {
-        withCredentials([usernamePassword(credentialsId: 'Docker-Login-ID', passwordVariable: 'dockerpass', usernameVariable: 'dockerlogin')]) {
-        sh 'docker login -u ${dockerlogin} -p ${dockerpass}'
-              }
-                          }
-            }
-    stage('Docker Push-Image') {
-      steps {
-        echo 'This stage will push my new image to the dockerhub'
-        sh 'docker push cbabu85/banking-apps:1.0'
-            }
-                              }
-    stage('CreateNew Server then configure and Deploy') {
-      steps {
-        withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'awscredentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-          dir('terraform-files') {
-          sh 'sudo chmod 600 newkeypairaws.pem'
-          sh 'terraform init'
-          sh 'terraform validate'
-          sh 'terraform apply --auto-approve'
-                                        }            
+       stage('Create Docker Image') {
+           steps {
+               sh 'docker build -t cbabu85/banking-project-demo:3.0 .'
+                    }
+                }
+       stage('Docker-Login') {
+           steps {
+               withCredentials([usernamePassword(credentialsId: 'Docker-login', passwordVariable: 'dockerpassword', usernameVariable: 'dockerlogin')]) { 
+               sh 'docker login -u ${dockerlogin} -p ${dockerpassword}'
                                    }
-      
-                               }
-                   }
-       }
+                        }
+                }
+       stage('Push-Image') {
+           steps {
+               sh 'docker push cbabu85/banking-project-demo:3.0'
+                     }
+                }
+       stage('Config & Deployment') {
+            steps {
+                
+                withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWS-ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    dir('terraform-files') {
+                    sh 'sudo chmod 600 mykey.pem'
+                    sh 'terraform init'
+                    sh 'terraform validate'
+                    sh 'terraform apply --auto-approve'
 }
-  
+    }
+}
+}
+}
+}
+       
+        
