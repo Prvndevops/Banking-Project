@@ -27,14 +27,10 @@ pipeline {
                sh 'docker build -t Prvndevops/banking-project-demo:1.0 .'
                     }
                 }
-         stage('Docker Login') {
-            steps {
-                script {
-                    // Use a temporary file to avoid echoing the password directly
-                    writeFile file: 'password.txt', text: "${dockerpassword}"
-                    sh 'cat password.txt | docker login -u Prvndevops --password-stdin'
-                    // Clean up the temporary file
-                    sh 'rm -f password.txt'
+        stage('Docker-Login') {
+           steps {
+             withCredentials([usernamePassword(credentialsId: 'Docker-login', passwordVariable: 'dockerpassword', usernameVariable: 'dockerlogin')]) { 
+               sh 'docker login -u ${dockerlogin} -p ${dockerpassword}'
                                    }
                         }
                 }
